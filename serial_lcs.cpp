@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <string>
-// #include <cstring>
+#include <cstring>
 #include <chrono>
 
 /*
@@ -85,6 +85,8 @@ int LCS(const std::string &s1, const std::string &s2, std::chrono::duration<doub
     // construct tabulation (memoization)
     // +1 row/col for "ghost cells" for base case, which are initialized to 0
     int tab[n+1][m+1] = {0};
+    // guarantee all entries have been set to 0
+    memset(tab, 0, sizeof(tab));
     // start timer
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::high_resolution_clock::now();
@@ -104,14 +106,22 @@ int LCS(const std::string &s1, const std::string &s2, std::chrono::duration<doub
     // end timer
     end = std::chrono::high_resolution_clock::now();
     time = end - start;
+    // DEBUG
+    // for (int i = 0; i <= n; ++i) {
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", tab[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    // END DEBUG
     // output length
     return tab[n][m];
 }
 
 int main(int argc, char** argv) {
     // 2 input strings
-    std::string X = "abadcabadcabadcabadcabadcabadc";
-    std::string Y = "adcadcadc";
+    std::string X = "fqgigtdvxtzrqpbsludswuqegzplqvlxlufupirmdrfvigntcsoyoedueuhwpvtcryygiqvnhaiphxklpykedpajlihafaewadcitxvcyfthcdsteczjtauekbgrblndqrljpinppgyrlqmpvmaoouvaxbryoedevopmycdnibgusvlphofxiaxgeoguukzraoebthqdjzzduludbzajcxrinachkbamsepnogqzfqezdycezepbdhjqhoztpzhjgxwwdpxkfblkzpqytfcwonovbpqtqyeyxducsrmzuzjtobujgyhvnxspmlkclodirxmjraklzvhpwdyfdfaqcuhqhrusgxczxoloovbprkepncuqjwhnrqdaiatqzxpwmamcyourayioddgmzpcsgftohoehlvdzyseyiypiwxwbcfocuqwcxpqhfworutsslwqtwhcvgawjhmnccjecbxlgvzzpusjgqzbnifkpigyptntxwabz";
+    std::string Y = "zjhmfhigrwixadchsfsklutefmxpvvaxejlmstsjrdirikzartncngisuhkqckphvatotnzkqieyudbmyoqluzfogrgldvszvlnqaobrwhrtmshkixveycthubsxzkyuxllzaoqyvkthcatlaorasmhoobonnmjmawmckcahowqtwjgyzxzukgiyiwnvlwiltunfypnplfikroiqljmvqvtatgxgfhrydgdeystlybvrpghapwyhtrjmahvhqmfuvkatdtgdweulkdnbzllsfuhhdcouqvqlfqgilnlhrhudlhgkvrfcomlrobngwfsbxamipzpghllsvseqljuzxhtniiugqojnovygxpmebaywueofokhlrcbbkvhcjqqzoqflfuriwreqvuxleezxgaytvhvganhodpbjlurhlyxgsuszbtwjtxcqeywelfuruvafptmct";
     // declare timer
     std::chrono::duration<double, std::milli> elapsed_ms;
     // get LCS
