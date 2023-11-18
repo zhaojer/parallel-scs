@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <string>
 
+#define NUM_THREADS_USED 16
+
 int test_omp() {
     int count = 0;
 #pragma omp parallel 
@@ -43,8 +45,8 @@ int lcs_anti_diagonal(const std::string &x, const std::string &y) {
         // get the length of the anti-diagonal
 		int diagonal_len = std::min(j, x_len - i);
         // parallel for loop for each anti-diagonal element
-		// #pragma omp parallel for num_threads(4)
-		#pragma omp parallel for
+		#pragma omp parallel for num_threads(NUM_THREADS_USED)
+		// #pragma omp parallel for
 		for (int k = 0; k <= diagonal_len; ++k)
 		{
             // index of the diagonal elements
@@ -91,7 +93,7 @@ int main(int argc, char** argv) {
     std::string Y = "zjhmfhigrwixadchsfsklutefmxpvvaxejlmstsjrdirikzartncngisuhkqckphvatotnzkqieyudbmyoqluzfogrgldvszvlnqaobrwhrtmshkixveycthubsxzkyuxllzaoqyvkthcatlaorasmhoobonnmjmawmckcahowqtwjgyzxzukgiyiwnvlwiltunfypnplfikroiqljmvqvtatgxgfhrydgdeystlybvrpghapwyhtrjmahvhqmfuvkatdtgdweulkdnbzllsfuhhdcouqvqlfqgilnlhrhudlhgkvrfcomlrobngwfsbxamipzpghllsvseqljuzxhtniiugqojnovygxpmebaywueofokhlrcbbkvhcjqqzoqflfuriwreqvuxleezxgaytvhvganhodpbjlurhlyxgsuszbtwjtxcqeywelfuruvafptmct";
 
     // explicitly enable dynamic teams
-    omp_set_dynamic(true);
+    // omp_set_dynamic(true);
 
     int lcs_length = lcs_anti_diagonal(X, Y);
     printf("Length of LCS is %d\n", lcs_length);

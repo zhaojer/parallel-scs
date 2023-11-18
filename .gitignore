@@ -2,3 +2,5 @@ serial_lcs
 serial_scs
 parallel_omp_lcs
 output*
+slurm*
+generate_string
