@@ -66,16 +66,76 @@ int scs_anti_diagonal(const std::string &x, const std::string &y) {
 	return tab[x_len][y_len];
 }
 
+int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
+    // get length of both strings
+    int n = s1.size();
+    int m = s2.size();
+    // create tabulation (memoization)
+    int tab[n+1][m+1];
+    // use bottom up iteration to find the optimal length of SCS
+    for (int i = 0; i < n + 1; ++i) {
+        for (int j = 0; j < m + 1; ++j) {
+            // both base cases and case 1 do not need to access anything from current row
+            if (i == 0) {
+                tab[i][j] = j;
+            }
+            else if (j == 0) {
+                tab[i][j] = i;
+            }
+            else if (s1[i-1] == s2[j-1]) {
+                tab[i][j] = 1 + tab[i-1][j-1];
+            }
+            // only case two needs to access from current row
+            // use new formula
+            else if (s1[i-1] != s2[j-1]) {
+                printf("Row: %d, Col: %d; ", i, j);
+                // first find k
+                int k = 1;
+                int tab_i_j_1;
+                while (true) {
+                    if (j - k == 0) {
+                        tab_i_j_1 = i + k - 1;
+                        printf("Reached edge of column");
+                        break;
+                    }
+                    else if (s1[i-1] == s2[j-1-k]) {
+                        tab_i_j_1 = tab[i-1][j-k-1] + k;
+                        printf("Found matching symbol");
+                        break;
+                    }
+                    else {
+                        ++k;
+                    }
+                }
+                printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_1);
+
+                tab[i][j] = 1 + std::min(tab_i_j_1, tab[i-1][j]);
+            }
+        }
+    }
+    // DEBUG
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            printf("%d ", tab[i][j]);
+        }
+        printf("\n");
+    }
+    // END DEBUG
+    // output length
+    return tab[n][m];
+}
+
 int main(int argc, char** argv) {
     // 2 input strings
-    std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
-    std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
+    std::string X = "ozpxennwael";
+    std::string Y = "iyklqkkdhnvwnrjbx";
 
     // explicitly enable dynamic teams
     // omp_set_dynamic(true);
 
-    int scs_length = scs_anti_diagonal(X, Y);
-    printf("Length of SCS is %d\n", scs_length);
+    // int scs_length = scs_anti_diagonal(X, Y);
+    int scs_length = scs_rowwise_independent(X, Y);
+    // printf("Length of SCS is %d\n", scs_length);
 
     return 0;
 }
