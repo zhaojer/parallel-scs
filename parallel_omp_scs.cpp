@@ -4,7 +4,21 @@
 
 #define NUM_THREADS_USED 16
 
-// Anti diagonal implementation of LCS
+/* Original Recurrence Relation for finding SCS
+Shortest Common Supersequence of 2 strings X, Y can be expressed using a recurrence relation.
+Base case: If X or Y has length 0, then the SCS is simply the other string.
+Let a, b denote the last symbol in X and Y respectively,
+Case 1: If the last symbol in X and Y are the same, i.e. a == b,
+        then SCS(X, Y) = SCS(X-a, Y-b) + a, i.e. it is the SCS of both strings without
+        their last symbol, concatenated with this last symbol once.
+Case 2: If the last symbol in X and Y are NOT the same, i.e. a != b,
+        then SCS(X, Y) = MIN{ SCS(X-a,Y) + a, SCS(X,Y-b) + b }, i.e. find the SCS between
+        one string remaining the same but excluding the last symbol of the other string,
+        concatenated with the symbol that was excluded.
+This approach is allowed because the problem satisfies the optimal substructure property of DP.
+*/
+
+// Anti diagonal implementation of SCS
 int scs_anti_diagonal(const std::string &x, const std::string &y) {
     // get length of strings x and y
     const int x_len = x.size();
@@ -66,6 +80,40 @@ int scs_anti_diagonal(const std::string &x, const std::string &y) {
 	return tab[x_len][y_len];
 }
 
+/* Reformulated Recurrence Relation for finding SCS
+Originally, Case 2 requires each entry to look at the entry to its left on the same row.
+So each entry [i][j], is dependent on [i-1][j], [i-1][j-1], and [i][j-1];
+this makes the relation having data dependency both row-wise and column-wise.
+However, we make the claim that the tabulation can actually be row-wise independent, i.e.
+the ith row data can be calculated just based on the (i − 1)th row data!
+
+To do this, we need to reformulate Case 2, specifically, somehow to not use tab[i][j-1].
+We make an observation that tab[i][j-1] can only be one of the following:
+1. tab[i][j-1] = i                                  if j-1 = 0
+2. tab[i][j-1] = tab[i-1][j-2] + 1                  if X[i] = Y[j-1]
+3. tab[i][j-1] = min{tab[i-1][j-1], tab[i][j-2]}    otherwise
+Note that case 3 requires tab[i][j-2] which is on the same row again, but we can simply
+do recursion using this formula until we get to either case 1 or 2!
+
+In other words, we can think of this as we just keep going left 1 char or col at a time, until
+we eventually no longer need to use the entry on the same row by either
+1. Reach the leftmost column, or
+2. Reach a character in string Y (i.e. at location j - k) that is the same as the current
+   character in string X (i.e. at location i).
+
+Thus, we can substitute tab[i][j-1] in Case 2 or the original recurrence relation as the following:
+- tab[i][j-1] = i + k - 1               if j-k = 0
+- tab[i][j-1] = tab[i-1][j-k-1] + k     if X[i] = Y[j-k]
+where k is the minimum number of chars we look left until either one of the two cases in the
+previous paragraph becomes true.
+
+The scs_rowwise_independent function implements this approach.
+
+Note that in the actual implementation, we are actually comparing X[i-1] and Y[i-1-k]
+bc the strings are 0-based indexing whereas the tabulation is 1-based indexing because
+of "the ghost cells" padding to account for the base case of scs.
+*/
+
 int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
     // get length of both strings
     int n = s1.size();
@@ -88,27 +136,26 @@ int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
             // only case two needs to access from current row
             // use new formula
             else if (s1[i-1] != s2[j-1]) {
-                printf("Row: %d, Col: %d; ", i, j);
+                // printf("Row: %d, Col: %d; ", i, j);
                 // first find k
                 int k = 1;
                 int tab_i_j_1;
                 while (true) {
                     if (j - k == 0) {
                         tab_i_j_1 = i + k - 1;
-                        printf("Reached edge of column");
+                        // printf("Reached edge of column");
                         break;
                     }
                     else if (s1[i-1] == s2[j-1-k]) {
                         tab_i_j_1 = tab[i-1][j-k-1] + k;
-                        printf("Found matching symbol");
+                        // printf("Found matching symbol");
                         break;
                     }
                     else {
                         ++k;
                     }
                 }
-                printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_1);
-
+                // printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_1);
                 tab[i][j] = 1 + std::min(tab_i_j_1, tab[i-1][j]);
             }
         }
@@ -127,15 +174,15 @@ int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
 
 int main(int argc, char** argv) {
     // 2 input strings
-    std::string X = "ozpxennwael";
-    std::string Y = "iyklqkkdhnvwnrjbx";
+    std::string X = "lfdvvktelhlxtuyid";
+    std::string Y = "xolfyipojgztfuwgiik";
 
     // explicitly enable dynamic teams
     // omp_set_dynamic(true);
 
     // int scs_length = scs_anti_diagonal(X, Y);
     int scs_length = scs_rowwise_independent(X, Y);
-    // printf("Length of SCS is %d\n", scs_length);
+    printf("Length of SCS is %d\n", scs_length);
 
     return 0;
 }
