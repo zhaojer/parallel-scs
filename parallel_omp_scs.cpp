@@ -3,7 +3,7 @@
 #include <string>
 #include <cassert>
 
-#define NUM_THREADS_USED 16
+#define NUM_THREADS_USED 8
 #define ALPHABET_SIZE 26
 #define CONVERT_LETTER_TO_IDX(letter) (int(letter) - 97)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -309,9 +309,13 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
     // create tabulation (memoization)
     int P[ALPHABET_SIZE][m+1];
     int tab[n+1][m+1];
+    double start, end;
+    // record start time
+    start = omp_get_wtime();
     // Step 1: fill out j-k values (see block of comments above for more info)
     // TODO: can parallelize the outer loop
     //      spawn 26 threads (one for each letter), each thread do the inner loop
+// #pragma omp parallel for num_threads(ALPHABET_SIZE)
     for (int i = 0; i < ALPHABET_SIZE; ++i) {
         // first column is always 0 bc it represents the empty string s2
         P[i][0] = 0;
@@ -325,6 +329,7 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
     }
     // Calculate base case (row 0) first
     // TODO: parallelize here or this can be considered as part of the initialization of tab
+// #pragma omp parallel for num_threads(NUM_THREADS_USED)
     for (int j = 0; j <= m; ++j) {
         tab[0][j] = j;
     }
@@ -333,6 +338,7 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
         // base case (col 0)
         tab[i][0] = i;
         // TODO: can parallelize the inner loop
+// #pragma omp parallel for num_threads(NUM_THREADS_USED)
         for (int j = 1; j <= m; ++j) {
             // first find k
             int j_minus_k = P[CONVERT_LETTER_TO_IDX(s1[i-1])][j];
@@ -348,14 +354,17 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
             tab[i][j] = 1 + MIN(tab_i_j_minus_1, tab[i-1][j]);
         }
     }
-    // DEBUG
-    for (int i = 0; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            printf("%d ", tab[i][j]);
-        }
-        printf("\n");
-    }
     // END DEBUG
+    // record end time
+    end = omp_get_wtime();
+    // DEBUG
+    // for (int i = 0; i <= n; ++i) {
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", tab[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    printf("Execution Time (ms) %f\n", (end - start) * 1000.0);
     // output length
     return tab[n][m];
 }

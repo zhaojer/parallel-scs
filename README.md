@@ -24,6 +24,8 @@
         - Discovered that no need to do this because we can just simply parallelize different loop!
     - Switched some function calls to compiler macros
     - Implement parallel version in Omp
+        - Done
+        - However, I appear to have some kind of misunderstanding of num_threads_used bc the more threads I use, the slower it gets...
 - Future:
     - Implement parallel version in CUDA
 
