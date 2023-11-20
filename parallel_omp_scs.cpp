@@ -5,6 +5,8 @@
 
 #define NUM_THREADS_USED 16
 #define ALPHABET_SIZE 26
+#define CONVERT_LETTER_TO_IDX(letter) (int(letter) - 97)
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
@@ -296,20 +298,81 @@ int scs_rowwise_independent_w_two_memos(const std::string &s1, const std::string
     return tab[n][m];
 }
 
+/*
+The algorithm below presents further optimized code with less conditional branches.
+*/
+
+int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2) {
+    // get length of both strings
+    int n = s1.size();
+    int m = s2.size();
+    // create tabulation (memoization)
+    int P[ALPHABET_SIZE][m+1];
+    int tab[n+1][m+1];
+    // Step 1: fill out j-k values (see block of comments above for more info)
+    // TODO: can parallelize the outer loop
+    //      spawn 26 threads (one for each letter), each thread do the inner loop
+    for (int i = 0; i < ALPHABET_SIZE; ++i) {
+        // first column is always 0 bc it represents the empty string s2
+        P[i][0] = 0;
+        for (int j = 1; j <= m; ++j) {
+            if (s2[j-1] == ALPHABET[i])
+                // note: no -1 here bc we do -1 later when indexing into s2
+                P[i][j] = j;
+            else
+                P[i][j] = P[i][j-1];
+        }
+    }
+    // Calculate base case (row 0) first
+    // TODO: parallelize here or this can be considered as part of the initialization of tab
+    for (int j = 0; j <= m; ++j) {
+        tab[0][j] = j;
+    }
+    // Step 2: use bottom up iteration to find the optimal length of SCS
+    for (int i = 1; i <= n; ++i) {
+        // base case (col 0)
+        tab[i][0] = i;
+        // TODO: can parallelize the inner loop
+        for (int j = 1; j <= m; ++j) {
+            // first find k
+            int j_minus_k = P[CONVERT_LETTER_TO_IDX(s1[i-1])][j];
+            int k = j - j_minus_k;
+            int tab_i_j_minus_1;
+            if (j_minus_k == 0)
+                // reached edge of column
+                tab_i_j_minus_1 = i + k - 1;
+            else
+                // found matching symbol
+                tab_i_j_minus_1 = tab[i-1][j_minus_k-1] + k;
+            // compute current value in tab
+            tab[i][j] = 1 + MIN(tab_i_j_minus_1, tab[i-1][j]);
+        }
+    }
+    // DEBUG
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            printf("%d ", tab[i][j]);
+        }
+        printf("\n");
+    }
+    // END DEBUG
+    // output length
+    return tab[n][m];
+}
+
 int main(int argc, char** argv) {
     // 2 input strings
-    std::string X = "usidiyqzbmcklxojvfhdonghvrjuemqagydqz";
-    std::string Y = "caoyescozjwxixrdbgxeozvghgouxdncddajwczvnwswvlbwtabhawqheeb";
+    std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
+    std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
 
     // explicitly enable dynamic teams
     // omp_set_dynamic(true);
 
     // int scs_length = scs_anti_diagonal(X, Y);
     // int scs_length_og = scs_rowwise_independent(X, Y);
-    int scs_length = scs_rowwise_independent_w_two_memos(X, Y);
+    // int scs_length = scs_rowwise_independent_w_two_memos(X, Y);
+    int scs_length = scs_rowwise_independent_optimal(X, Y);
     printf("Length of SCS is %d\n", scs_length);
-
-    // printf("a corresponds to %d\n", convert_letter_to_idx('x'));
 
     return 0;
 }

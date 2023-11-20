@@ -18,10 +18,18 @@
 - Memo solution also working: Now using one memo for j - k, and one memo for the length of scs; computing the former is column-wise independent, while the latter is row-wise independent.
 - Next Step:
     - Keep reading the paper to further speedup the code (e.g., less conditional branches)
+        - Could not really do it their way using bit operations (too complicated 😢)
+        - However, we still tried our best to minimize the branches!
     - Flip memo for j - k to be row-wise independent as well (bc cache in C is contiguous per row)
+        - Discovered that no need to do this because we can just simply parallelize different loop!
+    - Switched some function calls to compiler macros
     - Implement parallel version in Omp
 - Future:
     - Implement parallel version in CUDA
+
+### Assumptions
+- There are a finite number of letters in the alphabet which the input strings are generated from
+    - Specifically, they are the 26 lower case letters of the English alphabet
 
 ## TODO
 - Implement parallel algorithm in OpenMP
