@@ -263,10 +263,10 @@ int scs_rowwise_independent_w_two_memos(const std::string &s1, const std::string
             // only case two needs to access from current row
             // use new formula
             else {
-                printf("Row: %d, Col: %d; ", i, j);
+                // printf("Row: %d, Col: %d; ", i, j);
                 // first find k
                 int j_minus_k = P[convert_letter_to_idx(s1[i-1])][j];
-                printf(" j - k = %d ", j_minus_k);
+                // printf(" j - k = %d ", j_minus_k);
                 int k = j - j_minus_k;
                 int tab_i_j_minus_1;
                 // tab[i][j-1] = i + j - 1                                if P[c][j] = 0
@@ -279,7 +279,7 @@ int scs_rowwise_independent_w_two_memos(const std::string &s1, const std::string
                     tab_i_j_minus_1 = tab[i-1][j_minus_k-1] + k;
                     // printf("Found matching symbol");
                 }
-                printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_minus_1);
+                // printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_minus_1);
                 tab[i][j] = 1 + std::min(tab_i_j_minus_1, tab[i-1][j]);
             }
         }
@@ -307,7 +307,7 @@ int main(int argc, char** argv) {
     // int scs_length = scs_anti_diagonal(X, Y);
     // int scs_length_og = scs_rowwise_independent(X, Y);
     int scs_length = scs_rowwise_independent_w_two_memos(X, Y);
-    // printf("Length of SCS is %d\n", scs_length);
+    printf("Length of SCS is %d\n", scs_length);
 
     // printf("a corresponds to %d\n", convert_letter_to_idx('x'));
 
