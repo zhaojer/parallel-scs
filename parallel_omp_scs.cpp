@@ -1,8 +1,12 @@
 #include <omp.h>
 #include <algorithm>
 #include <string>
+#include <cassert>
 
 #define NUM_THREADS_USED 16
+#define ALPHABET_SIZE 26
+
+static const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
 /* Original Recurrence Relation for finding SCS
 Shortest Common Supersequence of 2 strings X, Y can be expressed using a recurrence relation.
@@ -136,7 +140,7 @@ int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
             // only case two needs to access from current row
             // use new formula
             else if (s1[i-1] != s2[j-1]) {
-                // printf("Row: %d, Col: %d; ", i, j);
+                printf("Row: %d, Col: %d; ", i, j);
                 // first find k
                 int k = 1;
                 int tab_i_j_1;
@@ -155,8 +159,128 @@ int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
                         ++k;
                     }
                 }
-                // printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_1);
+                printf(" j - k = %d ", j - k);
+                printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_1);
                 tab[i][j] = 1 + std::min(tab_i_j_1, tab[i-1][j]);
+            }
+        }
+    }
+    // DEBUG
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            printf("%d ", tab[i][j]);
+        }
+        printf("\n");
+    }
+    // END DEBUG
+    // output length
+    return tab[n][m];
+}
+
+/*
+The above row-wise implementation does remove the data dependency in the same row.
+However, the process of looking for k can be slow, especially when string Y is large.
+We can preprocess another matrix/tabulation for computing/storing j - k,
+let's call this matrix P.
+
+Let C be a finite alphabet for the input strings, C[1,...,l]
+Let 1 <= i <= l, 0 <= j <= m
+Define matrix/tabulation P[l+1][m+1] (i.e. row=each char in alphabet, col=each char in string Y),
+1. P[i][j] = 0              if j = 0
+2. P[i][j] = j - 1          if Y[j-1] = C[i]
+3. P[i][j] = P[i][j-1]      otherwise
+
+As a result, P[i][j] indicates the closest index (to index j) in string Y such that
+1. this index either equals to 0 (we have reached the edge column, i.e. no matching
+   chars between anything before index j in string Y and C[i]), or
+2. the char at this index in string Y equals to C[i] (we found a matching char)
+These two conditions parallel the two stopping conditions in the recurrence relation for
+tab[i][j-1] in the previous block of comment.
+In other words, P[i][j] equals to j - k.
+
+Note that filling out the matrix P is column-wise independent, which can also be parallelized.
+But bc cache is stored contiguous as rows in C, it is better to flip the row and column of P
+when actually implementing this approach.
+
+Lastly, we can replace the j - k in the recurrence relation for tab[i][j-1] in the previous
+block of comment with the following:
+- tab[i][j-1] = i + j - 1                                if P[c][j] = 0
+- tab[i][j-1] = tab[i-1][P[c][j]-1] + (j-P[c][j]-1])     if X[i] = Y[P[c][j]]
+*/
+
+// REQUIRES: alphabet has only 26 letters, specifically [a-z] lower case
+// MODIFIES: none
+// EFFECTS: returns 0-based indexing for the letter, e.g., a=0, b=1, ...
+int convert_letter_to_idx(const char letter) {
+    // TODO: make this compiler macro
+    // sanity check
+    assert(0 <= int(letter) - 97 && int(letter) - 97 <= 25);
+    return int(letter) - 97;
+}
+
+int scs_rowwise_independent_w_two_memos(const std::string &s1, const std::string &s2) {
+    // get length of both strings
+    int n = s1.size();
+    int m = s2.size();
+    // create tabulation (memoization)
+    int P[ALPHABET_SIZE][m+1];
+    int tab[n+1][m+1];
+    // Step 1: fill out j-k values (see block of comments above for more info)
+    for (int i = 0; i < ALPHABET_SIZE; ++i) {
+        // first column is always 0 bc it represents the empty string s2
+        P[i][0] = 0;
+        for (int j = 1; j <= m; ++j) {
+            if (s2[j-1] == ALPHABET[i])
+                // note: no -1 here bc we do -1 later when indexing into s2
+                P[i][j] = j;
+            else
+                P[i][j] = P[i][j-1];
+        }
+    }
+    // DEBUG
+    // for (int i = 0; i < ALPHABET_SIZE; ++i) {
+    //     printf("%c ", ALPHABET[i]);
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", P[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    // END DEBUG
+
+    // Step 2: use bottom up iteration to find the optimal length of SCS
+    for (int i = 0; i < n + 1; ++i) {
+        for (int j = 0; j < m + 1; ++j) {
+            // both base cases and case 1 do not need to access anything from current row
+            if (i == 0) {
+                tab[i][j] = j;
+            }
+            else if (j == 0) {
+                tab[i][j] = i;
+            }
+            else if (s1[i-1] == s2[j-1]) {
+                tab[i][j] = 1 + tab[i-1][j-1];
+            }
+            // only case two needs to access from current row
+            // use new formula
+            else {
+                printf("Row: %d, Col: %d; ", i, j);
+                // first find k
+                int j_minus_k = P[convert_letter_to_idx(s1[i-1])][j];
+                printf(" j - k = %d ", j_minus_k);
+                int k = j - j_minus_k;
+                int tab_i_j_minus_1;
+                // tab[i][j-1] = i + j - 1                                if P[c][j] = 0
+                // tab[i][j-1] = tab[i-1][P[c][j]-1] + (j-P[c][j]-1])     if X[i] = Y[P[c][j]]
+                if (j_minus_k == 0) {
+                    tab_i_j_minus_1 = i + k - 1;
+                    // printf("Reached edge of column");
+                }
+                else if (s1[i-1] == s2[j_minus_k-1]) {
+                    tab_i_j_minus_1 = tab[i-1][j_minus_k-1] + k;
+                    // printf("Found matching symbol");
+                }
+                printf("found k = %d, tab[i][j-1] = %d\n", k, tab_i_j_minus_1);
+                tab[i][j] = 1 + std::min(tab_i_j_minus_1, tab[i-1][j]);
             }
         }
     }
@@ -174,15 +298,18 @@ int scs_rowwise_independent(const std::string &s1, const std::string &s2) {
 
 int main(int argc, char** argv) {
     // 2 input strings
-    std::string X = "lfdvvktelhlxtuyid";
-    std::string Y = "xolfyipojgztfuwgiik";
+    std::string X = "usidiyqzbmcklxojvfhdonghvrjuemqagydqz";
+    std::string Y = "caoyescozjwxixrdbgxeozvghgouxdncddajwczvnwswvlbwtabhawqheeb";
 
     // explicitly enable dynamic teams
     // omp_set_dynamic(true);
 
     // int scs_length = scs_anti_diagonal(X, Y);
-    int scs_length = scs_rowwise_independent(X, Y);
-    printf("Length of SCS is %d\n", scs_length);
+    // int scs_length_og = scs_rowwise_independent(X, Y);
+    int scs_length = scs_rowwise_independent_w_two_memos(X, Y);
+    // printf("Length of SCS is %d\n", scs_length);
+
+    // printf("a corresponds to %d\n", convert_letter_to_idx('x'));
 
     return 0;
 }
