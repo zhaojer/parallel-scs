@@ -27,8 +27,12 @@
         - Done
         - However, I appear to have some kind of misunderstanding of num_threads_used bc the more threads I use, the slower it gets...
         - Reduced the number of times omp generates/destroys threads, timing seems slightly better now
+    - Construct two input strings by reading from input file.
 - Future:
-    - Implement parallel version in CUDA
+    - Ok, so omp versions are pretty much done.
+        - Can start testing them with different input sizes.
+        - Can also start writing the report/paper, explaining the SCS problem,  how I implemented normal DP version, the anti-diagonal version, row-wise independent version (with optimizations).
+    - Implement parallel version in CUDA and test the code.
 
 ### Assumptions
 - There are a finite number of letters in the alphabet which the input strings are generated from

@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <chrono>
+#include <fstream>
 
 /*
 class Solution {
@@ -154,6 +155,19 @@ int main(int argc, char** argv) {
     // 2 input strings
     std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
     std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
+    // read input string from file
+    std::ifstream fin;
+    fin.open("input/input-2000.txt");
+    // throw error if the file opening fails
+    if (!fin.is_open()) {
+        printf("Error opening file\n");
+        return 1;
+    }
+    std::getline(fin, X);
+    std::getline(fin, Y);
+    // printf("Size of X is %d, first char in X is %c\n", X.size(), X[0]);
+    // printf("Size of Y is %d, first char in Y is %c\n", Y.size(), Y[0]);
+    fin.close();
     // declare timer
     std::chrono::duration<double, std::milli> elapsed_ms;
     // get SCS
