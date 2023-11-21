@@ -315,11 +315,12 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
     // Step 1: fill out j-k values (see block of comments above for more info)
     // TODO: can parallelize the outer loop
     //      spawn 26 threads (one for each letter), each thread do the inner loop
-// #pragma omp parallel for num_threads(ALPHABET_SIZE)
+#pragma omp parallel for num_threads(ALPHABET_SIZE)
     for (int i = 0; i < ALPHABET_SIZE; ++i) {
         // first column is always 0 bc it represents the empty string s2
         P[i][0] = 0;
         for (int j = 1; j <= m; ++j) {
+            // printf("Thread Idx: %d, Row: %d Col: %d\n", omp_get_thread_num(), i, j);
             if (s2[j-1] == ALPHABET[i])
                 // note: no -1 here bc we do -1 later when indexing into s2
                 P[i][j] = j;
@@ -327,19 +328,26 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
                 P[i][j] = P[i][j-1];
         }
     }
-    // Calculate base case (row 0) first
+
+    // Step 2: use bottom up iteration to find the optimal length of SCS
+    int i = 1;
+    // using omp parallel outside to minimize threads generation for each inner loop
+#pragma omp parallel num_threads(NUM_THREADS_USED)
+{
+    // calculate base case (row 0) first
     // TODO: parallelize here or this can be considered as part of the initialization of tab
-// #pragma omp parallel for num_threads(NUM_THREADS_USED)
+#pragma omp for schedule(static)
     for (int j = 0; j <= m; ++j) {
         tab[0][j] = j;
     }
-    // Step 2: use bottom up iteration to find the optimal length of SCS
-    for (int i = 1; i <= n; ++i) {
+    // then iteratively calculate remaining rows
+    while (i <= n) {
         // base case (col 0)
         tab[i][0] = i;
         // TODO: can parallelize the inner loop
-// #pragma omp parallel for num_threads(NUM_THREADS_USED)
+#pragma omp for schedule(static)
         for (int j = 1; j <= m; ++j) {
+            // printf("Thread Idx: %d, Row: %d Col: %d\n", omp_get_thread_num(), i, j);
             // first find k
             int j_minus_k = P[CONVERT_LETTER_TO_IDX(s1[i-1])][j];
             int k = j - j_minus_k;
@@ -353,7 +361,10 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
             // compute current value in tab
             tab[i][j] = 1 + MIN(tab_i_j_minus_1, tab[i-1][j]);
         }
+#pragma omp single
+        ++i;
     }
+}
     // END DEBUG
     // record end time
     end = omp_get_wtime();

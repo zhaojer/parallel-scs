@@ -26,6 +26,7 @@
     - Implement parallel version in Omp
         - Done
         - However, I appear to have some kind of misunderstanding of num_threads_used bc the more threads I use, the slower it gets...
+        - Reduced the number of times omp generates/destroys threads, timing seems slightly better now
 - Future:
     - Implement parallel version in CUDA
 

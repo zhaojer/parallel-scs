@@ -11,4 +11,4 @@
 #SBATCH --partition=standard
 
 # export OMP_NUM_THREADS=9
-./parallel_omp_lcs > output-parallel-omp-lcs.txt
+./parallel_omp_scs > output-parallel-omp-scs.txt
