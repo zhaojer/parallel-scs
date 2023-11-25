@@ -20,6 +20,7 @@
     - Keep reading the paper to further speedup the code (e.g., less conditional branches)
         - Could not really do it their way using bit operations (too complicated 😢)
         - However, we still tried our best to minimize the branches!
+        - Update: I actually did manage to get the logic to work! But no apprent speedup at least on the CPU's side.
     - Flip memo for j - k to be row-wise independent as well (bc cache in C is contiguous per row)
         - Discovered that no need to do this because we can just simply parallelize different loop!
     - Switched some function calls to compiler macros
@@ -28,11 +29,8 @@
         - However, I appear to have some kind of misunderstanding of num_threads_used bc the more threads I use, the slower it gets...
         - Reduced the number of times omp generates/destroys threads, timing seems slightly better now
     - Construct two input strings by reading from input file.
-- Future:
-    - Ok, so omp versions are pretty much done.
-        - Can start testing them with different input sizes.
-        - Can also start writing the report/paper, explaining the SCS problem,  how I implemented normal DP version, the anti-diagonal version, row-wise independent version (with optimizations).
-    - Implement parallel version in CUDA and test the code.
+- Implement parallel version in CUDA and test the code.
+    - Done
 
 ### Assumptions
 - There are a finite number of letters in the alphabet which the input strings are generated from
@@ -42,4 +40,7 @@
 - Implement parallel algorithm in OpenMP
     - Anti-diagonal approach
     - Row-wise independent approach
-    - Other approaches
+- Currently, CUDA version also working.
+- But cannot figure out how to get enough memory to test out anything above 60000 * 60000 input size on greatlakes (for gpu).
+    - i.e. `cudaMalloc` no longer return `cudaSuccess`
+    - Thus, only test everything up to & including 40000 * 40000

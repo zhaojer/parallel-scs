@@ -6,6 +6,7 @@
 #SBATCH --time=00:05:00
 #SBATCH --account=eecs587f23_class
 #SBATCH --partition=gpu
+#SBATCH --mem-per-gpu=16GB
 
 
 
@@ -21,6 +22,6 @@
 ./parallel_cuda_scs input/input-10000.txt > output-parallel-cuda-scs-10000.txt
 ./parallel_cuda_scs input/input-20000.txt > output-parallel-cuda-scs-20000.txt
 ./parallel_cuda_scs input/input-40000.txt > output-parallel-cuda-scs-40000.txt
-./parallel_cuda_scs input/input-60000.txt > output-parallel-cuda-scs-60000.txt
-./parallel_cuda_scs input/input-80000.txt > output-parallel-cuda-scs-80000.txt
-./parallel_cuda_scs input/input-100000.txt > output-parallel-cuda-scs-100000.txt
+# ./parallel_cuda_scs input/input-60000.txt > output-parallel-cuda-scs-60000.txt
+# ./parallel_cuda_scs input/input-80000.txt > output-parallel-cuda-scs-80000.txt
+# ./parallel_cuda_scs input/input-100000.txt > output-parallel-cuda-scs-100000.txt

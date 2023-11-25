@@ -135,17 +135,12 @@ int main(int argc, char** argv)
     // size of strings
     const int n = X.size();
     const int m = Y.size();
-    // define memo
-    int A[ALPHABET_SIZE][m+1]; // j - k
-    int M[n+1][m+1];           // SCS length
-    // guarantee all entries have been set to 0
-    memset(A, 0, sizeof(A));
-    memset(M, 0, sizeof(M));
 
     // allocate memory for device variables
     char *d_X, *d_Y;
-    int *d_A;
-    int *d_M;
+    // memo directly defined on device memory
+    int *d_A; // j - k
+    int *d_M; // SCS length
     // check if the cuda functions fail using status codes provided by nvcc compiler
     if (cudaMalloc(&d_X, sizeof(char) * (n+1)) != cudaSuccess) {
         printf("CUDA Error: Could not allocate d_X for string X\n");
@@ -173,12 +168,12 @@ int main(int argc, char** argv)
         printf("CUDA Error: Could not copy Y into d_Y\n");
         return 1;
     }
-    if (cudaMemcpy(d_A, A, sizeof(int) * (m+1) * ALPHABET_SIZE, cudaMemcpyHostToDevice) != cudaSuccess) {
-        printf("CUDA Error: Could not copy A into d_A\n");
+    if (cudaMemset(d_A, 0, sizeof(int) * (m+1) * ALPHABET_SIZE) != cudaSuccess) {
+        printf("CUDA Error: Could not set memory of d_A to 0\n");
         return 1;
     }
-    if (cudaMemcpy(d_M, M, sizeof(int) * (m+1) * (n+1), cudaMemcpyHostToDevice) != cudaSuccess) {
-        printf("CUDA Error: Could not copy M into d_M\n");
+    if (cudaMemset(d_M, 0, sizeof(int) * (m+1) * (n+1)) != cudaSuccess) {
+        printf("CUDA Error: Could not set memory of d_M to 0\n");
         return 1;
     }
 
