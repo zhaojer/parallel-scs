@@ -135,11 +135,11 @@ __global__ void compute_j_minus_k(int* A, const char* s2, const int m)
     }
 }
 
-__global__ void compute_scs(const int* A, const int* M, const char* s1, const char* s2, const int n, const int m)
+__global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2, const int n, const int m)
 {
     // sanity check
-    printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
-    printf("String X: %s, String Y: %s, n = %d, m = %d\n", s1, s2, n, m);
+    // printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
+    // printf("String X: %s, String Y: %s, n = %d, m = %d\n", s1, s2, n, m);
     // for (int i = 0; i < ALPHABET_SIZE; ++i) {
     //     printf("%c ", d_ALPHABET[i]);
     //     for (int j = 0; j <= m; ++j) {
@@ -147,6 +147,12 @@ __global__ void compute_scs(const int* A, const int* M, const char* s1, const ch
     //     }
     //     printf("\n");
     // }
+    // compute the 0th row, base case
+    int j_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (j_idx > m)
+        return;
+    // printf("Block Id: %d, Thread Id: %d, Idx: %d\n", blockIdx.x, threadIdx.x, j_idx);
+    M[j_idx] = j_idx;
 }
 
 //host function, __host__ qualifier assumed by default
@@ -216,12 +222,19 @@ int main()
     dim3 blockDimA(ALPHABET_SIZE, 1, 1);
     dim3 gridDimA(1, 1, 1);
     // for computing SCS or memo M
-    // dim3 blockDimM(ALPHABET_SIZE, 1, 1);
-    // dim3 gridDimM(1, 1, 1);
+    int num_threads = MIN(1024, m+1);
+    dim3 blockDimM(num_threads, 1, 1);
+    int num_blocks = std::ceil((m+1) / (double)1024);
+    dim3 gridDimM(num_blocks, 1, 1);
+    printf("Sanity Check, Number of Threads %d, Number of Blocks: %d\n", num_threads, num_blocks);
 
     // record time for start
     cudaEventRecord(start);
+
+    // Step 1: compute j - k, i.e. memo A
     compute_j_minus_k<<<gridDimA,blockDimA>>>(d_A, d_Y, m);
+    // Step 2: compute SCS length, i.e. memo M
+    compute_scs<<<gridDimM,blockDimM>>>(d_M, d_A, d_X, d_Y, n, m);
 
     // record time for stop
     cudaEventRecord(stop);
@@ -236,10 +249,16 @@ int main()
         printf("CUDA Error: Could not copy d_M from device back to M in host\n");
     }
     // DEBUG
-    for (int i = 0; i < ALPHABET_SIZE; ++i) {
-        printf("%c ", ALPHABET[i]);
+    // for (int i = 0; i < ALPHABET_SIZE; ++i) {
+    //     printf("%c ", ALPHABET[i]);
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", A[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    for (int i = 0; i <= n; ++i) {
         for (int j = 0; j <= m; ++j) {
-            printf("%d ", A[i][j]);
+            printf("%d ", M[i][j]);
         }
         printf("\n");
     }
@@ -263,6 +282,8 @@ int main()
     printf("Elapsed Time (ms) = %f\n", elapsed_time);
 
     // clean up
+    cudaFree(d_X);
+    cudaFree(d_Y);
     cudaFree(d_A);
     cudaFree(d_M);
 
