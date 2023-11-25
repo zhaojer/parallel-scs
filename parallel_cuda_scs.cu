@@ -100,11 +100,38 @@ __global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2
 }
 
 //host function, __host__ qualifier assumed by default
-int main()
+int main(int argc, char** argv)
 {
+    // get input file name from commandline if one is provided
+    std::string input_file;
+    if (argc == 1) {
+        // default input file name
+        input_file = "input/input-2000.txt";
+    }
+    else if (argc == 2) {
+        input_file = argv[1];
+    }
+    else {
+        printf("Error: Invalid number of arguments provided\n");
+        printf("Usage: ./<program> <input file>\n");
+        return 1;
+    }
+    printf("Input: %s\n", input_file.c_str());
     // 2 input strings
     std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
     std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
+    // read input string from file
+    std::ifstream fin;
+    fin.open(input_file);
+    // throw error if the file opening fails
+    if (!fin.is_open()) {
+        printf("Error opening file: %s\n", input_file.c_str());
+        return 1;
+    }
+    std::getline(fin, X);
+    std::getline(fin, Y);
+    fin.close();
+
     // size of strings
     const int n = X.size();
     const int m = Y.size();
@@ -170,7 +197,7 @@ int main()
     dim3 blockDimM(num_threads, 1, 1);
     int num_blocks = std::ceil((m+1) / (double)1024);
     dim3 gridDimM(num_blocks, 1, 1);
-    printf("Sanity Check, Number of Threads %d, Number of Blocks: %d\n", num_threads, num_blocks);
+    // printf("Sanity Check, Number of Threads %d, Number of Blocks: %d\n", num_threads, num_blocks);
 
     // record time for start
     cudaEventRecord(start);
@@ -203,12 +230,12 @@ int main()
     //     }
     //     printf("\n");
     // }
-    for (int i = 0; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            printf("%d ", M[i][j]);
-        }
-        printf("\n");
-    }
+    // for (int i = 0; i <= n; ++i) {
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", M[i][j]);
+    //     }
+    //     printf("\n");
+    // }
     // END DEBUG
 
     // if (cudaMemcpy(&sum, write_buf, sizeof(double), cudaMemcpyDeviceToHost) != cudaSuccess) {
@@ -226,7 +253,8 @@ int main()
     /* --------------- 7. Print elapsed time & verification --------------- */
     float elapsed_time;
     cudaEventElapsedTime(&elapsed_time, start, stop);
-    printf("Elapsed Time (ms) = %f\n", elapsed_time);
+    printf("Execution Time (ms) %f\n", elapsed_time);
+    printf("Length of SCS is %d\n", M[n][m]);
 
     // clean up
     cudaFree(d_X);
