@@ -6,7 +6,8 @@
 #define CONVERT_LETTER_TO_IDX(letter) (int(letter) - 97)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-static const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+__device__ const char d_ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
 // REQUIRES: nums only has 5 numbers
 // MODIFIES: nums
@@ -103,6 +104,50 @@ __device__ void bubleSort(double nums[])
 //     }
 // }
 
+__global__ void compute_j_minus_k(int* A, const char* s2, const int m)
+{
+    // sanity check
+    // printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
+    // printf("String Y: %s, m = %d\n", s2, m);
+    // for (int i = 0; i < ALPHABET_SIZE; ++i) {
+    //     printf("%c ", d_ALPHABET[i]);
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", A[i*ALPHABET_SIZE + j]);
+    //     }
+    //     printf("\n");
+    // }
+
+    // calculate index which current thread needs to access
+    // threadIdx.x simply corresponds to the row index i
+    // note: no need to use blockIdx bc assumption: size of alphabet <= 1024
+    int startIdx = threadIdx.x * (m+1);
+    // each thread loops an entire "row" in A
+    int endIdx = startIdx + m;
+    // both indices are inclusive
+    // printf("Block Id: %d, Thread Id: %d, Start Index: %d, End Indx: %d\n", blockIdx.x, threadIdx.x, startIdx, endIdx);
+    int j = 1;
+    for (int idx = startIdx + 1; idx <= endIdx; ++idx) {
+        if (s2[j-1] == d_ALPHABET[threadIdx.x])
+            A[idx] = j;
+        else
+            A[idx] = A[idx-1];
+        ++j;
+    }
+}
+
+__global__ void compute_scs(const int* A, const int* M, const char* s1, const char* s2, const int n, const int m)
+{
+    // sanity check
+    printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
+    printf("String X: %s, String Y: %s, n = %d, m = %d\n", s1, s2, n, m);
+    // for (int i = 0; i < ALPHABET_SIZE; ++i) {
+    //     printf("%c ", d_ALPHABET[i]);
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", A[i*ALPHABET_SIZE + j]);
+    //     }
+    //     printf("\n");
+    // }
+}
 
 //host function, __host__ qualifier assumed by default
 int main()
@@ -119,15 +164,6 @@ int main()
     // guarantee all entries have been set to 0
     memset(A, 0, sizeof(A));
     memset(M, 0, sizeof(M));
-    // DEBUG
-    // for (int i = 0; i < ALPHABET_SIZE; ++i) {
-    //     printf("%c ", ALPHABET[i]);
-    //     for (int j = 0; j <= m; ++j) {
-    //         printf("%d ", A[i][j]);
-    //     }
-    //     printf("\n");
-    // }
-    // END DEBUG
 
     // allocate memory for device variables
     char *d_X, *d_Y;
@@ -173,7 +209,20 @@ int main()
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
-    
+
+    // declare block and grid dimensions
+    // only use 1 dimension bc of row-wise and col-wise independence
+    // for computing j-k or memmo A, assume ALPHABET_SIZE <= 1024
+    dim3 blockDimA(ALPHABET_SIZE, 1, 1);
+    dim3 gridDimA(1, 1, 1);
+    // for computing SCS or memo M
+    // dim3 blockDimM(ALPHABET_SIZE, 1, 1);
+    // dim3 gridDimM(1, 1, 1);
+
+    // record time for start
+    cudaEventRecord(start);
+    compute_j_minus_k<<<gridDimA,blockDimA>>>(d_A, d_Y, m);
+
     // record time for stop
     cudaEventRecord(stop);
     // blocks CPU execution until the specified event is recorded
@@ -186,6 +235,15 @@ int main()
     if (cudaMemcpy(M, d_M, sizeof(int) * (m+1) * (n+1), cudaMemcpyDeviceToHost) != cudaSuccess) {
         printf("CUDA Error: Could not copy d_M from device back to M in host\n");
     }
+    // DEBUG
+    for (int i = 0; i < ALPHABET_SIZE; ++i) {
+        printf("%c ", ALPHABET[i]);
+        for (int j = 0; j <= m; ++j) {
+            printf("%d ", A[i][j]);
+        }
+        printf("\n");
+    }
+    // END DEBUG
 
     // if (cudaMemcpy(&sum, write_buf, sizeof(double), cudaMemcpyDeviceToHost) != cudaSuccess) {
     //     std::cout << "CUDA Error: Could not copy final sum (d_A[0]) back to host" << std::endl;
@@ -202,6 +260,7 @@ int main()
     /* --------------- 7. Print elapsed time & verification --------------- */
     float elapsed_time;
     cudaEventElapsedTime(&elapsed_time, start, stop);
+    printf("Elapsed Time (ms) = %f\n", elapsed_time);
 
     // clean up
     cudaFree(d_A);
