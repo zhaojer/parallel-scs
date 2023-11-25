@@ -6,7 +6,7 @@
 #define CONVERT_LETTER_TO_IDX(letter) (int(letter) - 97)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+// const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 __device__ const char d_ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
 
@@ -215,14 +215,14 @@ int main(int argc, char** argv)
     // blocks CPU execution until the specified event is recorded
     cudaEventSynchronize(stop);
 
-    /* ---------------- 6. Copy stuff back from GPU to CPU ---------------- */
-    if (cudaMemcpy(A, d_A, sizeof(int) * (m+1) * ALPHABET_SIZE, cudaMemcpyDeviceToHost) != cudaSuccess) {
-        printf("CUDA Error: Could not copy d_A from device back to A in host\n");
-    }
-    if (cudaMemcpy(M, d_M, sizeof(int) * (m+1) * (n+1), cudaMemcpyDeviceToHost) != cudaSuccess) {
-        printf("CUDA Error: Could not copy d_M from device back to M in host\n");
-    }
+    /* ---------------- Copy stuff back from GPU to CPU ---------------- */
     // DEBUG
+    // if (cudaMemcpy(A, d_A, sizeof(int) * (m+1) * ALPHABET_SIZE, cudaMemcpyDeviceToHost) != cudaSuccess) {
+    //     printf("CUDA Error: Could not copy d_A from device back to A in host\n");
+    // }
+    // if (cudaMemcpy(M, d_M, sizeof(int) * (m+1) * (n+1), cudaMemcpyDeviceToHost) != cudaSuccess) {
+    //     printf("CUDA Error: Could not copy d_M from device back to M in host\n");
+    // }
     // for (int i = 0; i < ALPHABET_SIZE; ++i) {
     //     printf("%c ", ALPHABET[i]);
     //     for (int j = 0; j <= m; ++j) {
@@ -237,24 +237,15 @@ int main(int argc, char** argv)
     //     printf("\n");
     // }
     // END DEBUG
-
-    // if (cudaMemcpy(&sum, write_buf, sizeof(double), cudaMemcpyDeviceToHost) != cudaSuccess) {
-    //     std::cout << "CUDA Error: Could not copy final sum (d_A[0]) back to host" << std::endl;
-    //     return 1;
-    // }
-    // if (cudaMemcpy(&A_n3_n3, d_A_n3_n3, sizeof(double), cudaMemcpyDeviceToHost) != cudaSuccess) {
-    //     std::cout << "CUDA Error: Could not copy final d_A[N/3][N/3] back to host" << std::endl;
-    //     return 1;
-    // }
-    // if (cudaMemcpy(&A_19_37, d_A_19_37, sizeof(double), cudaMemcpyDeviceToHost) != cudaSuccess) {
-    //     std::cout << "CUDA Error: Could not copy final d_A[19][37] back to host" << std::endl;
-    //     return 1;
-    // }
-    /* --------------- 7. Print elapsed time & verification --------------- */
+    int scs_length;
+    if (cudaMemcpy(&scs_length, &d_M[n * (m+1) + m], sizeof(int), cudaMemcpyDeviceToHost) != cudaSuccess) {
+        printf("CUDA Error: Could not copy final SCS length from device back to host\n");
+    }
+    /* --------------- Print elapsed time & verification --------------- */
     float elapsed_time;
     cudaEventElapsedTime(&elapsed_time, start, stop);
     printf("Execution Time (ms) %f\n", elapsed_time);
-    printf("Length of SCS is %d\n", M[n][m]);
+    printf("Length of SCS is %d\n", scs_length);
 
     // clean up
     cudaFree(d_X);
