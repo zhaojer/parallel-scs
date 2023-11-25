@@ -10,8 +10,12 @@ serial_scs: serial_scs.cpp
 parallel_omp_scs: parallel_omp_scs.cpp
 	g++ -std=c++17 -O3 -fopenmp -o $@ $<
 
+parallel_cuda_scs: parallel_cuda_scs.cu
+	nvcc -o $@ $<
+
 clean:
 	rm -f serial_lcs
 	rm -f serial_scs
 	rm -f parallel_omp_lcs
 	rm -f parallel_omp_scs
+	rm -f parallel_cuda_scs

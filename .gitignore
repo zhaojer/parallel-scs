@@ -5,3 +5,4 @@ parallel_omp_scs
 output*
 slurm*
 generate_string
+parallel_cuda_scs
