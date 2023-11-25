@@ -9,100 +9,6 @@
 const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 __device__ const char d_ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
-// REQUIRES: nums only has 5 numbers
-// MODIFIES: nums
-// EFFECTS: sort nums up to 3 elements using a bubble sort; median is nums[2]
-__device__ void bubleSort(double nums[])
-{
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 5 - i - 1; j++) {
-            if (nums[j] > nums[j + 1]) {
-                double temp = nums[j];
-                nums[j] = nums[j+1];
-                nums[j+1] = temp;
-            }
-        }
-    }
-}
-
-// REQUIRES: curA and nextA correspond to matrix A and have size N * N
-//           curA contains values from previous iteration
-// MODIFIES: nextA
-// EFFECTS: perform (1 iteration of) stencil calculation
-//          by reading from curA and writing to nextA
-// __global__ void StencilCalculation(double* curA, double* nextA)
-// {
-//     /*
-//     we are using 2-Dimensional grid and 2-Dimensional block for this kernel
-//     this structure/setup is automatically partioning the 2D matrix A for us
-//     think of each block as taking non-overlapping partition of A of size [blockDim.x][blockDim.y]
-//     e.g. if block dims are 16 by 16, then each block is taking partition_of_A[16][16]
-//         and all these blocks together span the entire A
-//         see diagram I drew on paper
-//     */
-
-//     // declare shared memory for each block, speeds up memory access
-//     __shared__ double localA[one_dim + 2][one_dim + 2];
-//     // doing +2 on each dimension because of ghost cells
-
-//     // calculate colIdx and rowIdx corresponding to this thread in GPU
-//     // actual/global column index in 2D array A this thread corresponds to
-//     int colIdx = blockIdx.y * blockDim.y + threadIdx.y;
-//     // actual/global row index in 2D array A this thread corresponds to
-//     int rowIdx = blockIdx.x * blockDim.x + threadIdx.x;
-//     // this is the index this thread accesses in the flattened array A
-//     int idx = rowIdx * N + colIdx;
-//     // if this thread is out of bounds of N, then no need to go further
-//     if (colIdx >= N || rowIdx >= N) {
-//         // this happens bc N does not always evenly divide blockDim
-//         return;
-//     }
-//     // find index of surrounding elements, needed for finding median
-//     int downIdx = (rowIdx + 1) * N + colIdx;
-//     int upIdx = (rowIdx - 1) * N + colIdx;
-//     int rightIdx = rowIdx * N + (colIdx + 1);
-//     int leftIdx = rowIdx * N + (colIdx - 1);
-//     // local index is now 1-based indexing b/c of ghost cells up/down/left/right
-//     int localRowIdx = threadIdx.x + 1;
-//     int localColIdx = threadIdx.y + 1;
-//     // read from global to shared to speedup later access
-//     localA[localRowIdx][localColIdx] = curA[idx];
-//     if (localRowIdx == 1 && rowIdx > 0) {
-//         localA[localRowIdx - 1][localColIdx] = curA[upIdx];
-//     }
-//     if (localColIdx == 1 && colIdx > 0) {
-//         localA[localRowIdx][localColIdx - 1] = curA[leftIdx];
-//     }
-//     if (localRowIdx == one_dim && rowIdx < N - 1) {
-//         localA[localRowIdx + 1][localColIdx] = curA[downIdx];
-//     }
-//     if (localColIdx == one_dim && colIdx < N - 1) {
-//         localA[localRowIdx][localColIdx + 1] = curA[rightIdx];
-//     }
-//     // need to make sure all threads have read to shared localA before continue
-//     __syncthreads();
-
-//     // need synchronization before moving on to next iteration; this is done in CPU
-//     if ((rowIdx == 0) || (rowIdx == N - 1) || (colIdx == 0) || (colIdx == N - 1)) {
-//         // A's border remains unchanged throughout the iterations
-//         nextA[idx] = localA[localRowIdx][localColIdx];
-//     }
-//     else {
-//         // get all values from shared memory
-//         double nums[5] = {localA[localRowIdx][localColIdx],
-//                             localA[localRowIdx + 1][localColIdx],
-//                             localA[localRowIdx - 1][localColIdx], 
-//                             localA[localRowIdx][localColIdx + 1],
-//                             localA[localRowIdx][localColIdx - 1]};
-//         // need to efficiently find the median out of 5 elements
-//         // partial bubble sort is the fast (way faster than insertion)
-//         bubleSort(nums);
-//         double new_median = nums[2];
-//         nextA[idx] = new_median;
-//         // need to synchronize all threads here before writing to matrix A
-//         // this is done using read/write buffer (indirection), see CPU code
-//     }
-// }
 
 __global__ void compute_j_minus_k(int* A, const char* s2, const int m)
 {
@@ -135,7 +41,7 @@ __global__ void compute_j_minus_k(int* A, const char* s2, const int m)
     }
 }
 
-__global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2, const int n, const int m)
+__global__ void compute_scs_0th_row(int* M, const int m)
 {
     // sanity check
     // printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
@@ -153,6 +59,44 @@ __global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2
         return;
     // printf("Block Id: %d, Thread Id: %d, Idx: %d\n", blockIdx.x, threadIdx.x, j_idx);
     M[j_idx] = j_idx;
+}
+
+__global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2, const int i_idx, const int m)
+{
+    // sanity check
+    // printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
+    // printf("String X: %s, String Y: %s, n = %d, m = %d\n", s1, s2, n, m);
+    // for (int i = 0; i < ALPHABET_SIZE; ++i) {
+    //     printf("%c ", d_ALPHABET[i]);
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", A[i*ALPHABET_SIZE + j]);
+    //     }
+    //     printf("\n");
+    // }
+    // find corresponding column index
+    const int j_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    // check for boundaries
+    if (j_idx > m)
+        return;
+    // find index into M when M is flattened
+    const int idx_i_j = i_idx * (m+1) + j_idx;
+    // printf("Block Id: %d, Thread Id: %d, Idx: %d\n", blockIdx.x, threadIdx.x, idx_i_j);
+    // base case
+    if (j_idx == 0) {
+        M[idx_i_j] = i_idx;
+    }
+    else {
+        const int idx_i_minus_1_j = (i_idx-1) * (m+1) + j_idx;
+        const int j_minus_k = A[CONVERT_LETTER_TO_IDX(s1[i_idx-1]) * (m+1) + j_idx];
+        const int k = j_idx - j_minus_k;
+        int M_i_j_minus_1;
+        if (j_minus_k == 0)
+            M_i_j_minus_1 = i_idx + k - 1;
+        else
+            M_i_j_minus_1 = M[(i_idx-1) * (m+1) + (j_minus_k-1)] + k;
+        // compute current value
+        M[idx_i_j] = 1 + MIN(M_i_j_minus_1, M[idx_i_minus_1_j]);
+    }
 }
 
 //host function, __host__ qualifier assumed by default
@@ -234,7 +178,10 @@ int main()
     // Step 1: compute j - k, i.e. memo A
     compute_j_minus_k<<<gridDimA,blockDimA>>>(d_A, d_Y, m);
     // Step 2: compute SCS length, i.e. memo M
-    compute_scs<<<gridDimM,blockDimM>>>(d_M, d_A, d_X, d_Y, n, m);
+    compute_scs_0th_row<<<gridDimM,blockDimM>>>(d_M, m);
+    for (int i = 1; i <= n; ++i) {
+        compute_scs<<<gridDimM,blockDimM>>>(d_M, d_A, d_X, d_Y, i, m);
+    }
 
     // record time for stop
     cudaEventRecord(stop);
