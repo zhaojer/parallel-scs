@@ -10,7 +10,8 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
-static int NUM_THREADS_USED = 16; // default number of threads to use for omp
+// static int NUM_THREADS_USED = 16;
+// new plan: specify environment variable using OMP_NUM_THREADS in command line or shell script
 
 /* Original Recurrence Relation for finding SCS
 Shortest Common Supersequence of 2 strings X, Y can be expressed using a recurrence relation.
@@ -44,7 +45,8 @@ int scs_anti_diagonal(const std::string &x, const std::string &y) {
         // get the length of the anti-diagonal
 		int diagonal_len = std::min(j, x_len - i);
         // parallel for loop for each anti-diagonal element
-		#pragma omp parallel for num_threads(NUM_THREADS_USED)
+// #pragma omp parallel for num_threads(NUM_THREADS_USED)
+#pragma omp parallel for
 		// #pragma omp parallel for
 		for (int k = 0; k <= diagonal_len; ++k)
 		{
@@ -334,8 +336,10 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
     // Step 2: use bottom up iteration to find the optimal length of SCS
     int i = 1;
     // using omp parallel outside to minimize threads generation for each inner loop
-#pragma omp parallel num_threads(NUM_THREADS_USED)
+// #pragma omp parallel num_threads(NUM_THREADS_USED)
+#pragma omp parallel
 {
+    // printf("sanity check, number of threads: %d\n", omp_get_num_threads());
     // calculate base case (row 0) first
     // TODO: parallelize here or this can be considered as part of the initialization of tab
 #pragma omp for schedule(static)
@@ -406,7 +410,8 @@ int scs_rowwise_independent_no_branch(const std::string &s1, const std::string &
     // Step 2: use bottom up iteration to find the optimal length of SCS
     int i = 1;
     // opt: using omp parallel outside to minimize threads generation for each inner loop
-#pragma omp parallel num_threads(NUM_THREADS_USED)
+// #pragma omp parallel num_threads(NUM_THREADS_USED)
+#pragma omp parallel
 {
     // opt: calculate base case (row 0) first
 #pragma omp for schedule(static)
@@ -462,16 +467,12 @@ int main(int argc, char** argv) {
     else if (argc == 2) {
         input_file = argv[1];
     }
-    else if (argc == 3) {
-        input_file = argv[1];
-        NUM_THREADS_USED = atoi(argv[2]);
-    }
     else {
         printf("Error: Invalid number of arguments provided\n");
-        printf("Usage: ./<program> <input file> <number of threads>\n");
+        printf("Usage: ./<program> <input file>\n");
         return 1;
     }
-    printf("Input: %s, Number of threads: %d\n", input_file.c_str(), NUM_THREADS_USED);
+    printf("Input: %s\n", input_file.c_str());
     // 2 input strings
     std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
     std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
