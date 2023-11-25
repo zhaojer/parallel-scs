@@ -4,12 +4,13 @@
 #include <cassert>
 #include <fstream>
 
-#define NUM_THREADS_USED 16
+// #define NUM_THREADS_USED 16
 #define ALPHABET_SIZE 26
 #define CONVERT_LETTER_TO_IDX(letter) (int(letter) - 97)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static const char ALPHABET[ALPHABET_SIZE] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+static int NUM_THREADS_USED = 16; // default number of threads to use for omp
 
 /* Original Recurrence Relation for finding SCS
 Shortest Common Supersequence of 2 strings X, Y can be expressed using a recurrence relation.
@@ -452,15 +453,34 @@ int scs_rowwise_independent_no_branch(const std::string &s1, const std::string &
 }
 
 int main(int argc, char** argv) {
+    // get input file name from commandline if one is provided
+    std::string input_file;
+    if (argc == 1) {
+        // default input file name
+        input_file = "input/input-2000.txt";
+    }
+    else if (argc == 2) {
+        input_file = argv[1];
+    }
+    else if (argc == 3) {
+        input_file = argv[1];
+        NUM_THREADS_USED = atoi(argv[2]);
+    }
+    else {
+        printf("Error: Invalid number of arguments provided\n");
+        printf("Usage: ./<program> <input file> <number of threads>\n");
+        return 1;
+    }
+    printf("Input: %s, Number of threads: %d\n", input_file.c_str(), NUM_THREADS_USED);
     // 2 input strings
     std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
     std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
     // read input string from file
     std::ifstream fin;
-    fin.open("input/input-2000.txt");
+    fin.open(input_file);
     // throw error if the file opening fails
     if (!fin.is_open()) {
-        printf("Error opening file\n");
+        printf("Error opening file: %s\n", input_file.c_str());
         return 1;
     }
     std::getline(fin, X);

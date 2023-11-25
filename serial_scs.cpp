@@ -152,15 +152,30 @@ int SCS(const std::string &s1, const std::string &s2, std::chrono::duration<doub
 }
 
 int main(int argc, char** argv) {
+    // get input file name from commandline if one is provided
+    std::string input_file;
+    if (argc == 1) {
+        // default input file name
+        input_file = "input/input-2000.txt";
+    }
+    else if (argc == 2) {
+        input_file = argv[1];
+    }
+    else {
+        printf("Error: Invalid number of arguments provided\n");
+        printf("Usage: ./<program> <input file>\n");
+        return 1;
+    }
+    printf("Input: %s\n", input_file.c_str());
     // 2 input strings
     std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
     std::string Y = "iyklqkkdhnvwnrjbxkuyltiaqbllgsipqvaihmlozhnmyypxkjwwegyujjhqepfumhfuvqiuzvixtxxgivcobakllrbriimvrrpmjzgjxqisnfy";
     // read input string from file
     std::ifstream fin;
-    fin.open("input/input-2000.txt");
+    fin.open(input_file);
     // throw error if the file opening fails
     if (!fin.is_open()) {
-        printf("Error opening file\n");
+        printf("Error opening file: %s\n", input_file.c_str());
         return 1;
     }
     std::getline(fin, X);
