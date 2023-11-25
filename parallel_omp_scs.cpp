@@ -4,7 +4,7 @@
 #include <cassert>
 #include <fstream>
 
-#define NUM_THREADS_USED 8
+#define NUM_THREADS_USED 16
 #define ALPHABET_SIZE 26
 #define CONVERT_LETTER_TO_IDX(letter) (int(letter) - 97)
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -381,6 +381,76 @@ int scs_rowwise_independent_optimal(const std::string &s1, const std::string &s2
     return tab[n][m];
 }
 
+int scs_rowwise_independent_no_branch(const std::string &s1, const std::string &s2) {
+    // get length of both strings
+    const int n = s1.size();
+    const int m = s2.size();
+    // create memoization
+    int A[ALPHABET_SIZE][m+1];
+    int tab[n+1][m+1];
+    double start, end;
+    // record start time
+    start = omp_get_wtime();
+    // Step 1: fill out j-k values in first memo (see paper)
+    // spawn 26 threads (one for each letter), each thread do the inner loop
+#pragma omp parallel for num_threads(ALPHABET_SIZE)
+    for (int i = 0; i < ALPHABET_SIZE; ++i) {
+        // opt: first column is always 0 bc it represents the empty string s2
+        A[i][0] = 0;
+        for (int j = 1; j <= m; ++j)
+            // opt: only 1 comparison
+            A[i][j] = (s2[j-1] == ALPHABET[i]) ? j : A[i][j-1];
+    }
+
+    // Step 2: use bottom up iteration to find the optimal length of SCS
+    int i = 1;
+    // opt: using omp parallel outside to minimize threads generation for each inner loop
+#pragma omp parallel num_threads(NUM_THREADS_USED)
+{
+    // opt: calculate base case (row 0) first
+#pragma omp for schedule(static)
+    for (int j = 0; j <= m; ++j) {
+        tab[0][j] = j;
+    }
+    // then iteratively calculate remaining rows
+    while (i <= n) {
+        // base case (col 0)
+        tab[i][0] = i;
+#pragma omp for schedule(static)
+        for (int j = 1; j <= m; ++j) {
+            // first find k
+            int j_minus_k = A[CONVERT_LETTER_TO_IDX(s1[i-1])][j];
+
+            // rely solely on boolean logic
+            bool found_matching = j_minus_k > 0;
+            bool i_minus_1_leq_j_minus_1 = found_matching * (tab[i-1][j] <= tab[i-1][j_minus_k-1] + (j - j_minus_k))
+                                            + !found_matching * (tab[i-1][j] <= i + j - 1);
+            // observation: the difference between [i-1][j] and [i][j-1] is at most 1
+            // we can simply use tab[i-1][j] to compute tab[i][j]
+            // if tab[i-1][j] <= tab_i_j_minus_1, then simply add 1 as normal
+            // otherwise, we know that tab[i-1][j] = tab_i_j_minus_1 + 1,
+            // so we simply do not need to add 1 to it
+            tab[i][j] = tab[i-1][j] + i_minus_1_leq_j_minus_1;
+        }
+#pragma omp single
+        ++i;
+    }
+}
+    // END DEBUG
+    // record end time
+    end = omp_get_wtime();
+    // DEBUG
+    // for (int i = 0; i <= n; ++i) {
+    //     for (int j = 0; j <= m; ++j) {
+    //         printf("%d ", tab[i][j]);
+    //     }
+    //     printf("\n");
+    // }
+    printf("Execution Time (ms) %f\n", (end - start) * 1000.0);
+    // output length
+    return tab[n][m];
+}
+
 int main(int argc, char** argv) {
     // 2 input strings
     std::string X = "ozpxennwaelglzwocdybdmpmmcyconwcmlbsaoqcvciidewfiuiljaavcazqnvvbjyvjpmokqwstboa";
@@ -406,6 +476,7 @@ int main(int argc, char** argv) {
     // int scs_length_og = scs_rowwise_independent(X, Y);
     // int scs_length = scs_rowwise_independent_w_two_memos(X, Y);
     int scs_length = scs_rowwise_independent_optimal(X, Y);
+    // int scs_length = scs_rowwise_independent_no_branch(X, Y);
     printf("Length of SCS is %d\n", scs_length);
 
     return 0;
