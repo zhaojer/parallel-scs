@@ -1,3 +1,5 @@
+all: serial_scs parallel_omp_anti_diag_scs parallel_omp_scs parallel_cuda_scs
+
 serial_scs: serial_scs.cpp
 	g++ -O3 -o $@ $<
 

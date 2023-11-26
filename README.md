@@ -43,4 +43,4 @@
 - Currently, CUDA version also working.
 - But cannot figure out how to get enough memory to test out anything above 60000 * 60000 input size on greatlakes (for gpu).
     - i.e. `cudaMalloc` no longer return `cudaSuccess`
-    - Thus, only test everything up to & including 40000 * 40000
+    - Thus, only test everything up to & including 60000 * 60000

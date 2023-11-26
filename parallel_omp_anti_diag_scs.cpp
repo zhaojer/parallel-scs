@@ -29,7 +29,7 @@ int scs_anti_diagonal(const std::string &x, const std::string &y) {
     const int y_len = y.size();
     // construct tabulation (memoization)
     // +1 row/col for "ghost cells" for base case, which are initialized to 0
-    int tab[x_len + 1][y_len + 1] = {0};
+    int tab[x_len + 1][y_len + 1];
     // timer
     double start, end;
     // record start time

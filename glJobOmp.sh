@@ -18,6 +18,6 @@ export OMP_NUM_THREADS=16
 ./parallel_omp_scs input/input-10000.txt > output-parallel-omp-scs-10000-$OMP_NUM_THREADS.txt
 ./parallel_omp_scs input/input-20000.txt > output-parallel-omp-scs-20000-$OMP_NUM_THREADS.txt
 ./parallel_omp_scs input/input-40000.txt > output-parallel-omp-scs-40000-$OMP_NUM_THREADS.txt
-# ./parallel_omp_scs input/input-60000.txt > output-parallel-omp-scs-60000-$OMP_NUM_THREADS.txt
+./parallel_omp_scs input/input-60000.txt > output-parallel-omp-scs-60000-$OMP_NUM_THREADS.txt
 # ./parallel_omp_scs input/input-80000.txt > output-parallel-omp-scs-80000-$OMP_NUM_THREADS.txt
 # ./parallel_omp_scs input/input-100000.txt > output-parallel-omp-scs-100000-$OMP_NUM_THREADS.txt

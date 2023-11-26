@@ -61,7 +61,7 @@ __global__ void compute_scs_0th_row(int* M, const int m)
     M[j_idx] = j_idx;
 }
 
-__global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2, const int i_idx, const int m)
+__global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2, const long long i_idx, const long long m)
 {
     // sanity check
     // printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
@@ -74,19 +74,19 @@ __global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2
     //     printf("\n");
     // }
     // find corresponding column index
-    const int j_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    const long long j_idx = threadIdx.x + (long long)blockIdx.x * blockDim.x;
     // check for boundaries
     if (j_idx > m)
         return;
     // find index into M when M is flattened
-    const int idx_i_j = i_idx * (m+1) + j_idx;
+    const long long idx_i_j = i_idx * (m+1) + j_idx;
     // printf("Block Id: %d, Thread Id: %d, Idx: %d\n", blockIdx.x, threadIdx.x, idx_i_j);
     // base case
     if (j_idx == 0) {
         M[idx_i_j] = i_idx;
     }
     else {
-        const int idx_i_minus_1_j = (i_idx-1) * (m+1) + j_idx;
+        const long long idx_i_minus_1_j = (i_idx-1) * (m+1) + j_idx;
         const int j_minus_k = A[CONVERT_LETTER_TO_IDX(s1[i_idx-1]) * (m+1) + j_idx];
         const int k = j_idx - j_minus_k;
         int M_i_j_minus_1;
@@ -133,8 +133,8 @@ int main(int argc, char** argv)
     fin.close();
 
     // size of strings
-    const int n = X.size();
-    const int m = Y.size();
+    const long long n = X.size();
+    const long long m = Y.size();
 
     // allocate memory for device variables
     char *d_X, *d_Y;

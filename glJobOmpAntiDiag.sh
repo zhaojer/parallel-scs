@@ -18,3 +18,4 @@ export OMP_NUM_THREADS=16
 ./parallel_omp_anti_diag_scs input/input-10000.txt > output-parallel-omp-anti-diag-scs-10000-$OMP_NUM_THREADS.txt
 ./parallel_omp_anti_diag_scs input/input-20000.txt > output-parallel-omp-anti-diag-scs-20000-$OMP_NUM_THREADS.txt
 ./parallel_omp_anti_diag_scs input/input-40000.txt > output-parallel-omp-anti-diag-scs-40000-$OMP_NUM_THREADS.txt
+./parallel_omp_anti_diag_scs input/input-60000.txt > output-parallel-omp-anti-diag-scs-60000-$OMP_NUM_THREADS.txt
