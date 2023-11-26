@@ -1,8 +1,7 @@
-serial_lcs
 serial_scs
-parallel_omp_lcs
 parallel_omp_scs
 output*
 slurm*
 generate_string
 parallel_cuda_scs
+parallel_omp_anti_diag_scs
