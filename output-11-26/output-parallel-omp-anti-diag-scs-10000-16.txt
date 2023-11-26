@@ -1,0 +1,3 @@
+Input: input/input-10000.txt
+Execution Time (ms) 187.371974
+Length of SCS is 16771

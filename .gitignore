@@ -1,6 +1,7 @@
 serial_scs
 parallel_omp_scs
-output*
+*.txt
+!output-11-26/*.txt
 slurm*
 generate_string
 parallel_cuda_scs
