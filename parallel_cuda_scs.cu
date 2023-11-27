@@ -61,7 +61,16 @@ __global__ void compute_scs_0th_row(int* M, const int m)
     M[j_idx] = j_idx;
 }
 
-__global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2, const long long i_idx, const long long m)
+/*
+__global__ void compute_scs_0th_col(int* M, const int n, const int m) {
+    const long long i_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (i_idx > n)
+        return;
+    M[i_idx * (m+1)] = i_idx;
+}
+*/
+
+__global__ void compute_scs(int* M, const int* A, const char* s1, const long long i_idx, const long long m)
 {
     // sanity check
     // printf("Block Id: %d, Thread Id: %d\n", blockIdx.x, threadIdx.x);
@@ -98,6 +107,36 @@ __global__ void compute_scs(int* M, const int* A, const char* s1, const char* s2
         M[idx_i_j] = 1 + MIN(M_i_j_minus_1, M[idx_i_minus_1_j]);
     }
 }
+
+
+__global__ void compute_scs_optimal(int* M, const int* A, const char* s1, const long long i_idx, const long long m)
+{
+    // find corresponding column index
+    const long long j_idx = threadIdx.x + blockIdx.x * blockDim.x;
+    // check for boundaries
+    if (j_idx > m)
+        return;
+    // find index into M when M is flattened
+    const long long idx_i_j = i_idx * (m+1) + j_idx;
+    // printf("Block Id: %d, Thread Id: %d, Idx: %d\n", blockIdx.x, threadIdx.x, idx_i_j);
+    // base case
+    if (j_idx == 0) {
+        M[idx_i_j] = i_idx;
+    }
+    else {
+        const long long idx_i_minus_1_j = (i_idx-1) * (m+1) + j_idx;
+        const int j_minus_k = A[CONVERT_LETTER_TO_IDX(s1[i_idx-1]) * (m+1) + j_idx];
+        const int k = j_idx - j_minus_k;
+        int M_i_j_minus_1;
+        if (j_minus_k == 0)
+            M_i_j_minus_1 = i_idx + k - 1;
+        else
+            M_i_j_minus_1 = M[(i_idx-1) * (m+1) + (j_minus_k-1)] + k;
+        // compute current value
+        M[idx_i_j] = 1 + MIN(M_i_j_minus_1, M[idx_i_minus_1_j]);
+    }
+}
+
 
 //host function, __host__ qualifier assumed by default
 int main(int argc, char** argv)
@@ -201,8 +240,10 @@ int main(int argc, char** argv)
     compute_j_minus_k<<<gridDimA,blockDimA>>>(d_A, d_Y, m);
     // Step 2: compute SCS length, i.e. memo M
     compute_scs_0th_row<<<gridDimM,blockDimM>>>(d_M, m);
+    // compute_scs_0th_col<<<gridDimM,blockDimM>>>(d_M, n, m);
     for (int i = 1; i <= n; ++i) {
-        compute_scs<<<gridDimM,blockDimM>>>(d_M, d_A, d_X, d_Y, i, m);
+        compute_scs<<<gridDimM,blockDimM>>>(d_M, d_A, d_X, i, m);
+        // compute_scs_optimal<<<gridDimM,blockDimM>>>(d_M, d_A, d_X, i, m);
     }
 
     // record time for stop
