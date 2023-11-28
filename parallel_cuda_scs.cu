@@ -227,9 +227,10 @@ int main(int argc, char** argv)
     dim3 blockDimA(ALPHABET_SIZE, 1, 1);
     dim3 gridDimA(1, 1, 1);
     // for computing SCS or memo M
-    int num_threads = MIN(1024, m+1);
+    int default_num_threads_per_block = 512; // seems like 512 is faster than 1024
+    int num_threads = MIN(default_num_threads_per_block, m+1);
     dim3 blockDimM(num_threads, 1, 1);
-    int num_blocks = std::ceil((m+1) / (double)1024);
+    int num_blocks = std::ceil((m+1) / (double)default_num_threads_per_block);
     dim3 gridDimM(num_blocks, 1, 1);
     // printf("Sanity Check, Number of Threads %d, Number of Blocks: %d\n", num_threads, num_blocks);
 
